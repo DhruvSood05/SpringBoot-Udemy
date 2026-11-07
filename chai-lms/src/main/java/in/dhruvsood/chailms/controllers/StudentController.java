@@ -5,6 +5,7 @@ import in.dhruvsood.chailms.dtos.StudentDTO;
 import in.dhruvsood.chailms.entities.StudentEntity;
 import in.dhruvsood.chailms.repositories.StudentRepository;
 import in.dhruvsood.chailms.services.StudentService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -41,7 +42,7 @@ public class StudentController {
 
     @PostMapping
     public StudentDTO CreateStudent(
-            @RequestBody StudentDTO student
+            @RequestBody @Valid StudentDTO student
     ) {
 
         return studentService.createStudent(student);
@@ -49,7 +50,7 @@ public class StudentController {
 
     @PutMapping("/{studentId}")
     public StudentDTO updateStudentById(
-            @RequestBody StudentDTO student,
+            @RequestBody @Valid StudentDTO student,
             @PathVariable Long studentId
     ) {
         return studentService.updateStudentById(student, studentId);
