@@ -28,6 +28,7 @@ public class StudentController {
     public StudentDTO getStudentById(
             @PathVariable long studentId
     ) {
+
         return studentService.getStudentById(studentId);
 
 

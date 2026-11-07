@@ -2,6 +2,7 @@ package in.dhruvsood.chailms.services;
 
 import in.dhruvsood.chailms.dtos.StudentDTO;
 import in.dhruvsood.chailms.entities.StudentEntity;
+import in.dhruvsood.chailms.exceptions.ResourceNotFoundException;
 import in.dhruvsood.chailms.repositories.StudentRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class StudentService {
 
 
     public StudentDTO getStudentById(Long studentId) {
+        isExistsByStudentId(studentId);
         StudentEntity studentEntity = studentRepository.findById(studentId).orElse(null);
 
         return modelMapper.map(studentEntity, StudentDTO.class);
@@ -46,11 +48,7 @@ public class StudentService {
     }
 
     public StudentDTO updateStudentById(StudentDTO student, Long studentId) {
-        boolean existsById = isExistsById(studentId);
-
-        if (!existsById) {
-            return null;
-        }
+        isExistsByStudentId(studentId);
         StudentEntity studentEntity = modelMapper.map(student, StudentEntity.class);
         studentEntity.setId(studentId);
 
@@ -59,12 +57,7 @@ public class StudentService {
     }
 
     public StudentDTO partialUpdateStudentById(Map<String, Object> studentUpdates, Long studentId) {
-        boolean existsById = isExistsById(studentId);
-
-        if (!existsById) {
-            return null;
-
-        }
+        isExistsByStudentId(studentId);
 
         StudentEntity studentEntity = studentRepository.findById(studentId).get();
         studentUpdates.forEach((field, value) -> {
@@ -82,16 +75,20 @@ public class StudentService {
     }
 
     public boolean deleteStudentById(Long studentId) {
-        boolean existsById = isExistsById(studentId);
-
-        if (!existsById) {
-            return false;
-        }
+        isExistsByStudentId(studentId);
 
         studentRepository.deleteById(studentId);
 
         return true;
 
+    }
+
+    private void isExistsByStudentId(Long studentId) {
+        boolean existsById = isExistsById(studentId);
+
+        if (!existsById) {
+            throw new ResourceNotFoundException("Student with id " + studentId + " is not found");
+        }
     }
 
     private boolean isExistsById(Long studentId) {
