@@ -15,8 +15,18 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.48/lombok-1.18.48.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.48/lombok-1.18.48.jar" />
         </processorPath>
         <module name="chaicommerce" />
+      </profile>
+      <profile name="Annotation profile for fitnessStudioManagementSystem" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
+        </processorPath>
+        <module name="fitnessStudioManagementSystem" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -27,6 +37,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="chai-lms" options="-parameters" />
       <module name="chaicommerce" options="-parameters" />
+      <module name="fitnessStudioManagementSystem" options="-parameters" />
       <module name="hello-spring-boot" options="-parameters" />
     </option>
   </component>
