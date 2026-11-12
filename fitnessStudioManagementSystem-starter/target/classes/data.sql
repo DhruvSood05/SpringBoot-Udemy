@@ -12,9 +12,8 @@ VALUES ('Ishaan Kapoor', 'MALE', '1991-04-14', 'ishaan.kapoor@example.com', 'PRE
        ('Riya Choudhary', 'FEMALE', '1994-12-16', 'riya.choudhary@example.com', 'VIP', CURRENT_TIMESTAMP),
        ('Kunal Bhatia', 'MALE', '1989-08-05', 'kunal.bhatia@example.com', 'PREMIUM', CURRENT_TIMESTAMP),
        ('Tanya Krishnan', 'FEMALE', '1997-03-30', 'tanya.krishnan@example.com', 'BASIC', CURRENT_TIMESTAMP);
---
--- INSERT INTO trainer (name, specialization, email)
--- VALUES
---     ('Coach Ravi Shetty', 'Strength Training', 'ravi.shetty@example.com'),
---     ('Coach Anika Rao', 'Yoga', 'anika.rao@example.com'),
---     ('Coach Dev Menon', 'HIIT', 'dev.menon@example.com');
+
+INSERT INTO trainer (name, specialization, email)
+VALUES ('Coach Ravi Shetty', 'Strength Training', 'ravi.shetty@example.com'),
+       ('Coach Anika Rao', 'Yoga', 'anika.rao@example.com'),
+       ('Coach Dev Menon', 'HIIT', 'dev.menon@example.com');

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 
@@ -26,7 +27,7 @@ public class MembershipPlan {
     private String provider;
 
     @Column(nullable = false)
-    private LocalDateTime validUntil;
+    private LocalDate validUntil;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

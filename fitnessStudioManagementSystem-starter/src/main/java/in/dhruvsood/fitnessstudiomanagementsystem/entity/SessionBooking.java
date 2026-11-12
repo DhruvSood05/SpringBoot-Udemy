@@ -1,5 +1,6 @@
 package in.dhruvsood.fitnessstudiomanagementsystem.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,11 +28,15 @@ public class SessionBooking {
     @ManyToOne
     @JoinColumn(name = "member_id",
             nullable = false)
+    @ToString.Exclude
+    @JsonIgnore
     private Member member;
 
 
     @ManyToOne
     @JoinColumn(name = "trainer_id", nullable = false)
+    @ToString.Exclude
+    @JsonIgnore
     private Trainer trainer;
 
 }

@@ -36,11 +36,14 @@ public class Member {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @OneToOne
+    @OneToOne(cascade = {
+            CascadeType.ALL
+    })
     @JoinColumn(name = "membership_plan_id", unique = true)
     private MembershipPlan membershipPlan;
 
 
-    @OneToMany(mappedBy = "member")
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @ToString.Exclude
     private Set<SessionBooking> bookings = new HashSet<>();
 }
