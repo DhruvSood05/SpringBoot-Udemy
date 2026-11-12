@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @ToString
@@ -33,4 +35,12 @@ public class Member {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @OneToOne
+    @JoinColumn(name = "membership_plan_id", unique = true)
+    private MembershipPlan membershipPlan;
+
+
+    @OneToMany(mappedBy = "member")
+    private Set<SessionBooking> bookings = new HashSet<>();
 }

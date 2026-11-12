@@ -23,4 +23,15 @@ public class SessionBooking {
 
     @Column(nullable = false)
     private String reason;
+
+    @ManyToOne
+    @JoinColumn(name = "member_id",
+            nullable = false)
+    private Member member;
+
+
+    @ManyToOne
+    @JoinColumn(name = "trainer_id", nullable = false)
+    private Trainer trainer;
+
 }

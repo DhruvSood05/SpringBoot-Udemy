@@ -31,4 +31,7 @@ public class MembershipPlan {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @OneToOne(mappedBy = "membershipPlan")
+    private Member member;
 }
