@@ -36,6 +36,15 @@ Session Bookings). Covers:
   class/DTO-based (`CMemberInfo`) via JPQL constructor expressions
 - **Aggregation queries** in JPQL (`GROUP BY`, `COUNT`, `ORDER BY`) projected
   straight into DTOs (`MembershipTierStats`)
+- **Cascading** (`CascadeType.ALL`) on `Member`'s `@OneToOne` (membership
+  plan) and `@OneToMany` (bookings) associations — saving/deleting a `Member`
+  propagates to its related rows
+- **`@Transactional`** service methods, the persistence-context identity
+  guarantee (two `findById` calls in the same transaction return the *same*
+  Java object), and automatic dirty-checking (`setXxx(...)` inside a
+  transaction persists on commit with no explicit `save()` call)
+- `@JsonIgnore` + `@ToString.Exclude` on the back-reference side of
+  bidirectional relations to avoid infinite recursion in serialization/`toString()`
 - Postgres via Docker Compose
 
 ## Running any project

@@ -479,6 +479,135 @@ the relation field — watch for `StackOverflowError`. Safer to use
 
 ---
 
+## 12. Cascading & Transactions
+
+From the `fitnessStudioManagementSystem-starter` "JPA Cascading and
+Transactions" module — `Member`, `MemberService`, `SessionBookingService`.
+
+### `CascadeType` — propagating operations across relationships
+
+By default, calling `save()`/`delete()` on an entity does **not** touch its
+associations — you'd have to save/delete the related entity yourself.
+`cascade = CascadeType.ALL` on the owning side makes JPA propagate
+persist/merge/remove/refresh/detach down the association automatically:
+
+```java
+// Member owns the FK -> cascading here saves/deletes the MembershipPlan
+// whenever the owning Member is saved/deleted
+@OneToOne(cascade = CascadeType.ALL)
+@JoinColumn(name = "membership_plan_id", unique = true)
+private MembershipPlan membershipPlan;
+
+// Deleting a Member also deletes all of their SessionBookings
+@OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+@ToString.Exclude
+private Set<SessionBooking> bookings = new HashSet<>();
+```
+
+Other `CascadeType` values worth knowing individually: `PERSIST`, `MERGE`,
+`REMOVE`, `REFRESH`, `DETACH` — `ALL` is shorthand for every one of them.
+
+**Interview Q:** *What happens if you call `memberRepository.delete(member)`
+without `CascadeType.ALL`/`REMOVE` on `bookings`?*
+A: JPA tries to delete the `Member` row while FK-referencing `SessionBooking`
+rows still exist → a foreign key constraint violation at the DB level,
+because nothing told JPA to delete the children first.
+
+**Gotcha — cascade direction:** cascade is declared on the *owning* side's
+annotation and only cascades operations performed *on that entity*. Cascading
+`Member -> bookings` means deleting a `Member` deletes its `SessionBooking`s,
+not the reverse.
+
+### Bidirectional relations: breaking recursion in serialization
+
+Once `SessionBooking` has `@ManyToOne` back to `Member`/`Trainer`, and
+`Member`/`Trainer` have `@OneToMany` back to `SessionBooking`, both
+`toString()` and Jackson JSON serialization will recurse infinitely
+(`Member` -> `bookings` -> `SessionBooking` -> `member` -> `bookings` -> ...)
+unless one side is excluded:
+
+```java
+@ManyToOne
+@JoinColumn(name = "member_id", nullable = false)
+@ToString.Exclude   // keep Lombok's toString() from recursing
+@JsonIgnore          // keep Jackson from recursing when serialized to JSON
+private Member member;
+```
+
+`@ToString.Exclude` and `@JsonIgnore` solve two *different* recursion
+problems (Lombok-generated `toString()` vs Jackson serialization) — both are
+needed on the "many" side of a bidirectional relation if the "one" side's
+collection isn't itself excluded.
+
+### `@Transactional` — what it actually buys you
+
+```java
+@Transactional
+public void testMemberRepositoryTransactional() {
+    Member m1 = memberRepository.findById(1L).orElseThrow();
+    Member m2 = memberRepository.findById(1L).orElseThrow();
+
+    System.out.println(m1 == m2);   // true!
+
+    m1.setName("Dhruv");            // no explicit save() call...
+}                                    // ...but the UPDATE still happens on commit
+```
+
+Two things happening here, both because `@Transactional` keeps a single
+Hibernate **persistence context** (session) open for the whole method:
+
+1. **Identity guarantee** — a second `findById` for the same id/entity type
+   within the same transaction returns the *same* in-memory Java object from
+   the session's cache, not a fresh one re-read from the DB (`m1 == m2`).
+2. **Automatic dirty checking** — any setter call on a managed entity marks
+   it "dirty"; Hibernate compares the entity's state against the snapshot it
+   took when loading it, and flushes an `UPDATE` for changed fields when the
+   transaction commits — **no explicit `.save()` needed**, unlike outside a
+   transaction where you must call `save()` to persist a change.
+
+Without `@Transactional` (see plain `testMemberRepository()`), each
+`findById` opens and closes its own short-lived session — no identity
+guarantee across calls, and any entity returned is **detached** the moment
+the method returns, so mutating it afterward does nothing to the DB.
+
+```java
+@Transactional
+public MembershipPlan assignMembershipPlanToMember(MembershipPlan membershipPlan, Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow();
+    member.setMembershipPlan(membershipPlan);   // dirty-checked, cascades PERSIST to the new plan
+    return membershipPlan;                       // no explicit save() anywhere
+}
+
+@Transactional
+public void deleteMember(Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow();
+    memberRepository.delete(member);   // cascades to membershipPlan + bookings
+}
+```
+
+**Interview Q:** *Why does `assignMembershipPlanToMember` persist its change
+with no `save()` call?* A: The `Member` returned by `findById` inside an
+`@Transactional` method is a **managed** entity attached to the open
+persistence context. Any setter mutates its state in memory; Hibernate's
+dirty-checking detects the difference at flush/commit time and issues the
+`UPDATE`/`INSERT` itself.
+
+**Interview Q:** *`jakarta.transaction.Transactional` vs
+`org.springframework.transaction.annotation.Transactional` — does it
+matter which you import?* A: Both work with Spring's transaction
+infrastructure (Spring recognizes the standard `jakarta.transaction`
+annotation too), but only the Spring-native annotation exposes Spring-specific
+options like `propagation`, `isolation`, `readOnly`, and `rollbackFor` — worth
+switching to the Spring one once propagation/rollback rules need tuning.
+
+**Interview Q:** *Where should `@Transactional` go — controller, service, or
+repository?* A: Service layer. It's the layer that owns a unit of business
+work (potentially touching multiple repositories), repositories are too
+fine-grained (one call each), and controllers shouldn't know about
+persistence boundaries.
+
+---
+
 ## Interview Question Bank (quick recall)
 
 1. **Explain the request lifecycle** for a `POST /students` call in this app,
@@ -489,9 +618,12 @@ the relation field — watch for `StackOverflowError`. Safer to use
    `@Controller`/`@RestController`?** All are `@Component` stereotypes;
    `@Service`/`@Repository`/`@Controller` exist for semantic clarity and some
    extra behavior (`@Repository` enables persistence-exception translation).
-3. **What does `@Transactional` do and where would you add it?** (not yet in
-   these projects — note to add when covered: wraps a method in a DB
-   transaction, commits on success, rolls back on runtime exception.)
+3. **What does `@Transactional` do and where would you add it?** Wraps a
+   method in a single DB transaction/persistence context — commits on
+   success, rolls back on an uncaught runtime exception. Gives entity
+   identity guarantees (repeated `findById` within the method returns the
+   same object) and automatic dirty-checking (setter changes flush without
+   an explicit `save()`). Add it at the service layer (see §12).
 4. **JPQL vs native SQL** — JPQL operates on entity/field names and is
    DB-agnostic; native queries (`@Query(nativeQuery = true)`) use actual table
    /column names and are DB-specific.
@@ -514,7 +646,9 @@ the relation field — watch for `StackOverflowError`. Safer to use
 ---
 
 ## TODO / Topics to add as the course progresses
-- `@Transactional` and transaction propagation
+- Transaction propagation levels (`REQUIRED`, `REQUIRES_NEW`, `NESTED`, etc.)
+  and isolation levels — covered the default/basic case in §12, not the
+  advanced propagation rules yet
 - Spring Security (auth, JWT)
 - `FetchType` tuning + N+1 problem solutions (`@EntityGraph`, `JOIN FETCH`)
 - Pagination & sorting (`Pageable`, `Page<T>`)
